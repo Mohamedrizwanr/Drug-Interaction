@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Drug Interaction Checker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex justify-center items-center">
+
+<div class="w-full max-w-3xl bg-white rounded-xl shadow-lg p-6">
+
+  <!-- Header -->
+  <h2 class="text-sm font-semibold text-white bg-gray-800 px-4 py-2 rounded-md mb-4">
+    ADD DRUG TO CHECK FOR INTERACTIONS
+  </h2>
+
+  <!-- Input Box -->
+  <div class="relative">
+    <div id="tagBox"
+      class="flex flex-wrap gap-2 items-center border-2 border-pink-400 rounded-full px-4 py-2 min-h-[52px]">
+
+      <input id="drugInput"
+        type="text"
+        class="flex-grow outline-none text-sm"
+        placeholder="Type medicine name..." />
+    </div>
+
+    <!-- Autocomplete -->
+    <div id="suggestions"
+      class="absolute z-10 bg-white border w-full mt-1 rounded shadow hidden"></div>
+  </div>
+
+  <!-- Selected Drugs -->
+  <div id="selectedDrugs" class="flex flex-wrap gap-2 mt-4"></div>
+
+  <!-- Buttons -->
+  <div class="flex items-center gap-4 mt-6">
+    <button onclick="submitDrugs()"
+      class="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-full font-semibold">
+      Check Interactions
+    </button>
+
+    <button onclick="clearAll()"
+      class="border border-blue-400 text-blue-500 px-4 py-2 rounded-full">
+      CLEAR
+    </button>
+  </div>
+
+  <!-- Warning -->
+  <div class="mt-6 border border-red-300 bg-red-50 text-red-600 text-sm p-3 rounded">
+    ⚠️ Warning: If no interactions are found between two drugs, it does not necessarily
+    mean no interactions exist. Always consult a Doctors.
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="mt-6"></div>
+
+</div>
+<a href="/logout" class="text-blue-600 underline">Logout</a>
+
+<script src="/static/main.js"></script>
+</body>
+</html>

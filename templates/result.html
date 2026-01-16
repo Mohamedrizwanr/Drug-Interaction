@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Results</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<nav class="bg-white shadow px-6 py-4 flex justify-between">
+  <h1 class="font-bold text-blue-700">Interaction Results</h1>
+  <a href="/dashboard" class="text-blue-600">← Back</a>
+</nav>
+
+<div class="max-w-4xl mx-auto p-6">
+
+{% for r in result %}
+<div class="bg-white rounded-xl shadow p-6 mb-5">
+
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="font-semibold text-lg">
+      {{ r.drug1_name }} + {{ r.drug2_name }}
+    </h2>
+
+    <span class="px-4 py-1 rounded-full text-white text-sm
+      {% if r.risk_level == 'LOW' %} bg-green-500
+      {% elif r.risk_level == 'MODERATE' %} bg-yellow-500
+      {% else %} bg-red-500 {% endif %}">
+      {{ r.risk_level }}
+    </span>
+  </div>
+
+  <div class="mb-3">
+    <p class="text-sm text-gray-600">
+      Interaction Probability: <b>{{ r.interaction_probability }}</b>
+    </p>
+
+    <div class="w-full bg-gray-200 h-3 rounded mt-1">
+      <div class="h-3 rounded
+        {% if r.risk_level == 'LOW' %} bg-green-500
+        {% elif r.risk_level == 'MODERATE' %} bg-yellow-500
+        {% else %} bg-red-500 {% endif %}"
+        style="width: {{ r.risk_score }}%">
+      </div>
+    </div>
+  </div>
+
+  {% if r.side_effects %}
+  <div class="bg-gray-50 p-4 rounded">
+    <h3 class="font-semibold mb-2">Key Side Effects</h3>
+    <ul class="list-disc list-inside text-sm">
+      {% for s in r.side_effects[:5] %}
+        <li>{{ s }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+{% endfor %}
+
+{% if session.role == "user" %}
+<div class="text-center mt-6">
+  <a href="/download-pdf"
+     class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+    Download PDF
+  </a>
+</div>
+{% endif %}
+
+</div>
+</body>
+</html>

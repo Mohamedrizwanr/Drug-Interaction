@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+torch
+torch-geometric
+pandas
+pydantic
