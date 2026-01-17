@@ -1,21 +1,26 @@
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, redirect
+from werkzeug.security import generate_password_hash, check_password_hash
+import mysql.connector
+import json
+
+# ---- Project services ----
 from services.drug_mapper import get_id, autocomplete
 from services.inference_service import predict
 from services.side_effect_service import get_side_effects
 from services.risk_service import risk
 from services.explanation_service import explain_side_effect
-from flask import Flask, render_template, request, redirect, session
-from werkzeug.security import generate_password_hash, check_password_hash
-import mysql.connector
-import json
 
 
-
-# ---------------- CREATE FLASK APP FIRST ----------------
+# =====================================================
+# CREATE FLASK APP
+# =====================================================
 app = Flask(__name__)
 app.secret_key = "secure_key"
 
-# ---------------- DATABASE CONNECTION ----------------
+
+# =====================================================
+# DATABASE CONNECTION
+# =====================================================
 db = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -23,38 +28,48 @@ db = mysql.connector.connect(
     database="drug_interaction_db"
 )
 
-# ---------------- ROUTES ----------------
 
-@app.route("/")
-def home():
-    return render_template("home.html")
+# =====================================================
+# ENTRY PAGE (LOGIN / SIGNUP / GUEST)
+# =====================================================
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-@app.route("/autocomplete")
-def auto():
-    q = request.args.get("q", "")
-    return jsonify(autocomplete(q))
+# =====================================================
+# SIGNUP
+# =====================================================
+from mysql.connector import IntegrityError
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    error = None
+
     if request.method == "POST":
         name = request.form["name"]
         email = request.form["email"]
         password = generate_password_hash(request.form["password"])
 
-        cur = db.cursor()
-        cur.execute(
-            "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)",
-            (name, email, password)
-        )
-        db.commit()
+        try:
+            cur = db.cursor()
+            cur.execute(
+                "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)",
+                (name, email, password)
+            )
+            db.commit()
+            return redirect("/login")
 
-        return redirect("/login")
+        except IntegrityError:
+            error = "Email already registered. Please login instead."
 
-    return render_template("signup.html")
+    return render_template("signup.html", error=error)
+
+
+
+# =====================================================
+# LOGIN (EMAIL + PASSWORD)
+# =====================================================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -66,6 +81,7 @@ def login():
         user = cur.fetchone()
 
         if user and check_password_hash(user["password_hash"], password):
+            session.clear()
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
             return redirect("/home")
@@ -73,29 +89,56 @@ def login():
         return "Invalid email or password"
 
     return render_template("login.html")
+
+
+# =====================================================
+# GUEST ACCESS
+# =====================================================
 @app.route("/guest")
 def guest():
     session.clear()
     session["guest"] = True
     return redirect("/home")
+
+
+# =====================================================
+# LOGOUT
+# =====================================================
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
 
+# =====================================================
+# HOME PAGE (PROTECTED)
+# =====================================================
+@app.route("/home")
+def home():
+    if "user_id" not in session and "guest" not in session:
+        return redirect("/")
+    return render_template("home.html")
+
+
+# =====================================================
+# AUTOCOMPLETE API
+# =====================================================
+@app.route("/autocomplete")
+def auto():
+    q = request.args.get("q", "")
+    return jsonify(autocomplete(q))
+
+
+# =====================================================
+# PREDICT API (CORE FUNCTIONALITY)
+# =====================================================
 @app.route("/predict", methods=["POST"])
 def predict_route():
 
-    # =====================================================
-    # 🔹 1️⃣ CHECK USER TYPE (ADD THIS AT THE VERY TOP)
-    # =====================================================
+    # 1️⃣ USER TYPE
     is_logged_in = "user_id" in session
-    is_guest = session.get("guest", False)
 
-    # =====================================================
-    # 🔹 2️⃣ GET USER INPUT (EXISTING CODE – KEEP)
-    # =====================================================
+    # 2️⃣ INPUT
     data = request.json.get("medicines", "")
     names = [n.strip() for n in data.split(",")]
 
@@ -108,16 +151,12 @@ def predict_route():
             drug_ids.append(did)
             name_map[did] = n
 
-    # =====================================================
-    # 🔹 3️⃣ RUN GNN INFERENCE (EXISTING CODE – KEEP)
-    # =====================================================
+    # 3️⃣ INFERENCE
     predictions = predict(drug_ids)
-
     output = []
 
     for p in predictions:
         score, level = risk(p["probability"])
-
         side_effects = get_side_effects(p["drug1"], p["drug2"])
 
         formatted = []
@@ -137,27 +176,21 @@ def predict_route():
             "side_effects": formatted
         })
 
-    # =====================================================
-    # 🔹 4️⃣ SAVE HISTORY (ADD HERE – AFTER OUTPUT READY)
-    # =====================================================
+    # 4️⃣ SAVE HISTORY (LOGGED-IN USERS ONLY)
     if is_logged_in:
         cur = db.cursor()
         cur.execute(
             "INSERT INTO search_history (user_id, drugs, result) VALUES (%s, %s, %s)",
-            (
-                session["user_id"],
-                data,                # original medicine names
-                json.dumps(output)   # final result
-            )
+            (session["user_id"], data, json.dumps(output))
         )
         db.commit()
 
-    # =====================================================
-    # 🔹 5️⃣ RETURN RESULT (EXISTING CODE – KEEP)
-    # =====================================================
+    # 5️⃣ RETURN RESULT
     return jsonify(output)
 
-# ---------------- RUN APP ----------------
+
+# =====================================================
+# RUN APP
+# =====================================================
 if __name__ == "__main__":
     app.run(debug=True)
-

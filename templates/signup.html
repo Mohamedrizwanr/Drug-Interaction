@@ -1,7 +1,16 @@
 <form method="POST" class="max-w-sm mx-auto mt-20">
-  <input name="name" placeholder="Name" class="w-full mb-3 p-2 border">
-  <input name="email" placeholder="Email" class="w-full mb-3 p-2 border">
+  <input name="name" placeholder="Name" class="w-full mb-3 p-2 border" required>
+  <input name="email" placeholder="Email" class="w-full mb-3 p-2 border" required>
   <input name="password" type="password" placeholder="Password"
-         class="w-full mb-3 p-2 border">
-  <button class="bg-green-600 text-white w-full py-2">Sign Up</button>
+         class="w-full mb-3 p-2 border" required>
+
+  {% if error %}
+    <div class="text-red-600 text-sm mb-3">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <button class="bg-green-600 text-white w-full py-2">
+    Sign Up
+  </button>
 </form>
