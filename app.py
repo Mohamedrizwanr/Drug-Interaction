@@ -117,7 +117,12 @@ def logout():
 def home():
     if "user_id" not in session and "guest" not in session:
         return redirect("/")
-    return render_template("home.html")
+
+    return render_template(
+        "home.html",
+        is_logged_in=("user_id" in session)
+    )
+
 
 
 # =====================================================
@@ -144,6 +149,15 @@ def predict_route():
 
     drug_ids = []
     name_map = {}
+    MAX_DRUGS = 10
+
+    if len(drug_ids) < 2:
+        return jsonify({"error": "Please enter at least two medicines."})
+
+    if len(drug_ids) > MAX_DRUGS:
+        return jsonify({
+            "error": f"Please enter no more than {MAX_DRUGS} medicines."
+        })
 
     for n in names:
         did = get_id(n)
@@ -158,6 +172,7 @@ def predict_route():
     for p in predictions:
         score, level = risk(p["probability"])
         side_effects = get_side_effects(p["drug1"], p["drug2"])
+
 
         formatted = []
         for s in side_effects:

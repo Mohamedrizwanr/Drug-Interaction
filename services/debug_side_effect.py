@@ -2,43 +2,48 @@ import pickle
 import os
 
 # =====================================================
-# LOAD SIDE EFFECT DATA
+# PROJECT ROOT
+# services/side_effect_service.py → go up two levels
 # =====================================================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 DATA_PATH = os.path.join(BASE_DIR, "data", "side_effect_dict.pkl")
 
+# =====================================================
+# LOAD SIDE EFFECT DICTIONARY
+# =====================================================
 with open(DATA_PATH, "rb") as f:
     SIDE_EFFECTS = pickle.load(f)
 
 
 def get_side_effects(drug1, drug2, limit=5):
     """
-    Fetch side effects using string keys like:
-    DB01232_DB01418
+    Returns side effects for a drug pair.
+    Handles order + structure safely.
     """
 
-    # Generate both possible key orders
-    key1 = f"{drug1}_{drug2}"
-    key2 = f"{drug2}_{drug1}"
+    # DrugBank pairs can be stored in any order
+    key1 = (drug1, drug2)
+    key2 = (drug2, drug1)
 
-    record = SIDE_EFFECTS.get(key1) or SIDE_EFFECTS.get(key2)
+    record = None
 
-    if not record:
+    if key1 in SIDE_EFFECTS:
+        record = SIDE_EFFECTS[key1]
+    elif key2 in SIDE_EFFECTS:
+        record = SIDE_EFFECTS[key2]
+    else:
         return []
 
     effects = []
     severities = []
 
-    # Expected format:
-    # {
-    #   "side_effects": [...],
-    #   "severity": [...]
-    # }
+    # Handle expected dict format
     if isinstance(record, dict):
         effects = record.get("side_effects", [])
         severities = record.get("severity", [])
 
-    # Fallback: list-only
+    # Handle list-only format (fallback)
     elif isinstance(record, list):
         effects = record
         severities = ["moderate"] * len(effects)
@@ -52,3 +57,5 @@ def get_side_effects(drug1, drug2, limit=5):
         })
 
     return results
+if __name__ == "__main__":
+    print("Loaded side effect pairs:", len(SIDE_EFFECTS))

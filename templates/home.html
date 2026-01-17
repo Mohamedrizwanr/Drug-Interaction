@@ -7,6 +7,12 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen flex justify-center items-center">
+{% if is_logged_in %}
+  <a href="/logout"
+     class="absolute top-4 right-6 text-blue-600 font-medium underline">
+    Logout
+  </a>
+{% endif %}
 
 <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg p-6">
 
@@ -57,7 +63,7 @@
   <div id="results" class="mt-6"></div>
 
 </div>
-<a href="/logout" class="text-blue-600 underline">Logout</a>
+
 
 <script src="/static/main.js"></script>
 </body>
